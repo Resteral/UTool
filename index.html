@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BuildFlow - Premium Construction Job & Invoice Manager</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Premium Header -->
+    <header>
+      <div class="logo-section">
+        <div class="logo-icon">BF</div>
+        <div class="logo-text">BuildFlow</div>
+      </div>
+      <div class="controls-section">
+        <div class="header-tier-badge" id="header-sub-badge">Sandbox Free</div>
+        <button class="btn-cloud-settings" id="cloud-settings-btn" title="Cloud & Subscriptions Settings" aria-label="Cloud & Subscriptions Settings">
+          <i data-lucide="cloud"></i>
+        </button>
+        <button class="btn-theme-toggle" id="theme-toggle-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">
+          <i data-lucide="sun"></i>
+        </button>
+        <button class="btn btn-primary" id="add-job-btn">
+          <i data-lucide="plus"></i> Add New Job
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main>
+      
+      <!-- Dashboard Statistics -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="stat-label">Active Jobs</span>
+            <span class="stat-value" id="stat-active-jobs">0</span>
+            <span class="stat-subtext">Projects currently in progress</span>
+          </div>
+          <div class="stat-icon-wrapper">
+            <i data-lucide="hard-hat"></i>
+          </div>
+        </div>
+
+        <div class="stat-card success">
+          <div class="stat-info">
+            <span class="stat-label">Total Revenue</span>
+            <span class="stat-value" id="stat-total-revenue">$0.00</span>
+            <span class="stat-subtext">Sum of all active budgets</span>
+          </div>
+          <div class="stat-icon-wrapper">
+            <i data-lucide="dollar-sign"></i>
+          </div>
+        </div>
+
+        <div class="stat-card warning">
+          <div class="stat-info">
+            <span class="stat-label">Outstanding Invoices</span>
+            <span class="stat-value" id="stat-outstanding">$0.00</span>
+            <span class="stat-subtext">Total sent & unpaid balances</span>
+          </div>
+          <div class="stat-icon-wrapper">
+            <i data-lucide="receipt"></i>
+          </div>
+        </div>
+
+        <div class="stat-card danger">
+          <div class="stat-info">
+            <span class="stat-label">Paid Invoices</span>
+            <span class="stat-value" id="stat-collected">$0.00</span>
+            <span class="stat-subtext">Total collection rate</span>
+          </div>
+          <div class="stat-icon-wrapper">
+            <i data-lucide="check-circle-2"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- Toolbar, Search & Filters -->
+      <section class="toolbar-section">
+        <div class="search-filter-group">
+          <div class="input-wrapper">
+            <i data-lucide="search"></i>
+            <input type="text" id="search-input" class="input-text" placeholder="Search by job name, address, or client...">
+          </div>
+          
+          <select id="status-filter">
+            <option value="all">All Statuses</option>
+            <option value="planned">Planned</option>
+            <option value="in-progress">In Progress</option>
+            <option value="delayed">Delayed</option>
+            <option value="completed">Completed</option>
+          </select>
+
+          <select id="sort-filter">
+            <option value="newest">Sort by: Newest</option>
+            <option value="oldest">Sort by: Oldest</option>
+            <option value="value-high">Budget: High to Low</option>
+            <option value="value-low">Budget: Low to High</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Jobs Grid -->
+      <section class="jobs-grid" id="jobs-grid-container">
+        <!-- Rendered dynamically by app.js -->
+      </section>
+
+      <!-- Partner Logo Marquee Band -->
+      <section class="partner-marquee-section">
+        <div class="marquee-title">Premium Certified Subscribers & Partners</div>
+        <div class="marquee-viewport">
+          <div class="marquee-track" id="partner-marquee-track">
+            <!-- Dynamic partner logos rendered here -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL: ADD / EDIT JOB DRAWER -->
+  <div class="backdrop" id="job-drawer-backdrop">
+    <div class="drawer">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <h2 class="drawer-title" id="job-drawer-title">Add Construction Job</h2>
+          <span class="drawer-subtitle">Initialize a new build and schedule parameters</span>
+        </div>
+        <button class="btn-close" id="job-drawer-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <form id="job-form">
+          <input type="hidden" id="job-id-field">
+          
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="info"></i> General Information</h3>
+            <div class="form-grid full">
+              <div class="form-group">
+                <label for="job-title-field">Job Title / Name *</label>
+                <input type="text" id="job-title-field" class="input-field" placeholder="e.g., Oak Street Foundation Laying" required>
+              </div>
+              <div class="form-group">
+                <label for="job-desc-field">Job Description & Notes</label>
+                <textarea id="job-desc-field" class="textarea-field" placeholder="Outline structural tasks, materials to handle, or scheduling dependencies..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="map-pin"></i> Site Address & Status</h3>
+            <div class="form-grid">
+              <div class="form-group col-span-2">
+                <label for="job-address-field">Construction Site Address *</label>
+                <input type="text" id="job-address-field" class="input-field" placeholder="e.g., 742 Evergreen Terr, Springfield" required>
+              </div>
+              <div class="form-group">
+                <label for="job-status-field">Job Status</label>
+                <select id="job-status-field">
+                  <option value="planned">Planned</option>
+                  <option value="in-progress" selected>In Progress</option>
+                  <option value="delayed">Delayed</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="job-budget-field">Overall Expected Budget ($)</label>
+                <input type="number" id="job-budget-field" class="input-field" placeholder="e.g., 85000" min="0" step="100">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="user"></i> Client Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="job-client-name">Client Name *</label>
+                <input type="text" id="job-client-name" class="input-field" placeholder="e.g., Robert Vance" required>
+              </div>
+              <div class="form-group">
+                <label for="job-client-email">Client Email</label>
+                <input type="email" id="job-client-email" class="input-field" placeholder="e.g., bob@vance refrigeration.com">
+              </div>
+              <div class="form-group">
+                <label for="job-client-phone">Client Phone</label>
+                <input type="tel" id="job-client-phone" class="input-field" placeholder="e.g., (555) 019-2831">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="calendar"></i> Timeline Schedule</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="job-start-date">Start Date</label>
+                <input type="date" id="job-start-date" class="input-field">
+              </div>
+              <div class="form-group">
+                <label for="job-end-date">Target End Date</label>
+                <input type="date" id="job-end-date" class="input-field">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="users"></i> Crew Assignment</h3>
+            <div class="crew-assignment-controls">
+              <label>Select Crew Members Assigned to this Project:</label>
+              <div class="crew-checkbox-grid" id="job-form-crew-checkboxes">
+                <!-- Loaded dynamically by app.js -->
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+      <div class="drawer-footer">
+        <button class="btn btn-secondary" id="job-form-cancel">Cancel</button>
+        <button class="btn btn-primary" id="job-form-submit">Save Construction Job</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VIEW DETAILS DRAWER (WIDE) -->
+  <div class="backdrop" id="details-drawer-backdrop">
+    <div class="drawer wide">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <h2 class="drawer-title" id="details-title">Sunset Ridge Luxury Villa</h2>
+          <span class="drawer-subtitle" id="details-subtitle">Job Site Dashboard</span>
+        </div>
+        <button class="btn-close" id="details-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      
+      <!-- Tab Headers -->
+      <div class="tab-headers">
+        <button class="tab-btn active" data-tab="tab-overview">Overview & Site Data</button>
+        <button class="tab-btn" data-tab="tab-crew-milestones" id="tab-crew-milestones-btn">Crew & Milestones</button>
+        <button class="tab-btn" data-tab="tab-invoices" id="tab-invoices-btn">Invoices & Materials</button>
+        <button class="tab-btn" data-tab="tab-contract" id="tab-contract-btn">Contract Agreement</button>
+      </div>
+
+      <div class="drawer-body">
+        
+        <!-- Tab 1: Overview -->
+        <div class="tab-pane active" id="tab-overview">
+          
+          <div class="form-grid" style="margin-bottom: 2rem;">
+            <div>
+              <div class="form-section">
+                <h3 class="form-section-title"><i data-lucide="map-pin"></i> Project Location Map</h3>
+                
+                <!-- Mock Map Widget -->
+                <div class="map-widget-container">
+                  <div class="map-header">
+                    <span id="map-address-label">Loading site coordinates...</span>
+                    <span style="font-weight:600; color:var(--primary-orange);">SATELLITE MOD</span>
+                  </div>
+                  <div class="map-canvas-wrapper">
+                    <canvas class="map-canvas" id="site-map-canvas"></canvas>
+                    <div class="map-overlay-weather">
+                      <span>Live Site Weather:</span>
+                      <div class="weather-badge">
+                        <i data-lucide="sun" id="weather-icon"></i>
+                        <span id="weather-temp">72°F - Sunny</span>
+                      </div>
+                      <span style="font-size:0.65rem; color:var(--success-green);" id="weather-status">Site Safety Index: 98%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-section">
+                <h3 class="form-section-title"><i data-lucide="user"></i> Client Profile & Action</h3>
+                <div style="background-color: var(--accent-tint); padding: 1.25rem; border-radius: var(--border-radius-md); border:1px solid var(--border-color-light); margin-bottom: 1rem;">
+                  <h4 style="font-family:var(--font-family-title); font-size:1.1rem; margin-bottom:0.5rem;" id="details-client-name">Robert Vance</h4>
+                  <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.85rem; color:var(--text-muted);">
+                    <div style="display:flex; align-items:center; gap:0.5rem;"><i data-lucide="mail" style="width:14px; height:14px;"></i> <span id="details-client-email">bob@vance.com</span></div>
+                    <div style="display:flex; align-items:center; gap:0.5rem;"><i data-lucide="phone" style="width:14px; height:14px;"></i> <span id="details-client-phone">(555) 019-2831</span></div>
+                    <div style="display:flex; align-items:center; gap:0.5rem;"><i data-lucide="calendar" style="width:14px; height:14px;"></i> <span>Project Start: <strong id="details-start-date" style="color:var(--text-main);">05/10/2026</strong></span></div>
+                    <div style="display:flex; align-items:center; gap:0.5rem;"><i data-lucide="calendar-check" style="width:14px; height:14px;"></i> <span>Target Completion: <strong id="details-end-date" style="color:var(--text-main);">09/15/2026</strong></span></div>
+                  </div>
+                </div>
+                
+                <div style="display:flex; gap:0.5rem;">
+                  <button class="btn btn-secondary btn-sm" id="btn-edit-job" style="flex:1;"><i data-lucide="edit"></i> Edit Parameters</button>
+                  <button class="btn btn-danger btn-sm" id="btn-delete-job"><i data-lucide="trash-2"></i> Delete Job</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="align-left"></i> Project Scope & Field Notes</h3>
+            <p style="font-size:0.95rem; line-height:1.6; color:var(--text-main); background-color:var(--accent-tint); padding:1.25rem; border-radius:var(--border-radius-md); border:1px solid var(--border-color-light);" id="details-description">
+              No description notes provided for this job.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Tab 3: Crew & Milestones -->
+        <div class="tab-pane" id="tab-crew-milestones">
+          
+          <!-- Assigned Crew Members -->
+          <div class="form-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+              <h3 class="form-section-title" style="margin-bottom:0;"><i data-lucide="users"></i> Assigned Construction Crew</h3>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <select id="details-crew-assign-select" style="padding:0.4rem 0.8rem; font-size:0.8rem; width:180px; padding-right:2rem; margin:0;">
+                  <!-- Dynamically populated crew choices -->
+                </select>
+                <button class="btn btn-primary btn-sm" id="btn-assign-crew-member"><i data-lucide="user-plus"></i> Assign</button>
+              </div>
+            </div>
+            
+            <div class="crew-grid" id="details-crew-grid">
+              <!-- Dynamically populated assigned workers -->
+            </div>
+          </div>
+
+          <!-- Project Timeline & Milestones -->
+          <div class="form-section" style="margin-top:2.5rem;">
+            <h3 class="form-section-title"><i data-lucide="calendar-days"></i> Project Milestone Schedule</h3>
+            
+            <div class="timeline-track" id="details-timeline-track">
+              <!-- Dynamically populated milestones -->
+            </div>
+
+            <!-- Add Milestone Widget -->
+            <div class="add-milestone-widget">
+              <h4 style="font-size:0.85rem; font-weight:700; margin-bottom:0.75rem;"><i data-lucide="plus-circle" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Schedule New Project Milestone</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <input type="text" id="milestone-title-field" class="input-field" placeholder="e.g. Rough Inspections Cleared" style="padding:0.5rem 0.75rem; font-size:0.85rem;">
+                </div>
+                <div class="form-group" style="display:flex; flex-direction:row; gap:0.5rem;">
+                  <input type="date" id="milestone-date-field" class="input-field" style="padding:0.5rem 0.75rem; font-size:0.85rem; flex:1;">
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-add-milestone" style="padding:0.5rem 1rem;">Add Milestone</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tab 4: Legal Contract Agreement -->
+        <div class="tab-pane" id="tab-contract">
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+            <span style="font-size:0.85rem; color:var(--text-muted);">Customize clauses, review dynamic finances, and execute signature parameters below.</span>
+            <button class="btn btn-secondary btn-sm" id="btn-print-contract"><i data-lucide="printer"></i> Print Contract Agreement</button>
+          </div>
+
+          <!-- Legal contract sheet mockup -->
+          <div class="contract-paper-sheet" id="legal-contract-sheet">
+            <div class="contract-watermark-glowing">EXECUTED</div>
+            <div class="signature-digital-stamp" id="contract-digital-seal">EXECUTED</div>
+
+            <div class="contract-header">
+              <h2 class="contract-title">Standard Construction Agreement</h2>
+              <span class="contract-subtitle">Legally Binding Work Contract</span>
+            </div>
+
+            <div class="contract-preamble">
+              This Construction Work Agreement (the "Contract") is made and entered into this 
+              <strong id="contract-current-date">May 18, 2026</strong>, by and between 
+              <strong>BuildFlow Construction LLC</strong> ("Contractor") and 
+              <strong id="contract-party-client">Client Name</strong> ("Owner"), for the properties and terms defined below:
+            </div>
+
+            <div class="contract-clause">
+              <div class="contract-clause-header">1. PROJECT SITE ADDRESS & SPECIFICATION</div>
+              <div class="contract-clause-text">
+                The work performed under this Contract shall be located at the following project address: 
+                <strong id="contract-site-address">Site Location Address</strong>.
+              </div>
+            </div>
+
+            <div class="contract-clause">
+              <div class="contract-clause-header">2. DETAILED SCOPE OF CONSTRUCTION WORK</div>
+              <div class="contract-clause-text">
+                Contractor agrees to perform all services, structural operations, and material installations described below:
+              </div>
+              <textarea class="contract-clause-textarea" id="contract-scope-textarea">Scope breakdown here...</textarea>
+            </div>
+
+            <div class="contract-clause">
+              <div class="contract-clause-header">3. FINANCIAL SUM & PAYMENT TERMS</div>
+              <div class="contract-clause-text">
+                Owner agrees to pay Contractor the expected sum of 
+                <strong id="contract-total-budget">$0.00</strong> for materials, labor, and markup operations. 
+                Payments will be distributed according to invoices, draws, or milestone approvals. 
+                Labor charges and supplies tax fees are itemized below:
+              </div>
+              <div style="margin-top:0.75rem; background:#f8fafc; padding:0.75rem 1rem; border-radius:var(--border-radius-sm); border:1px solid #e2e8f0; font-size:0.85rem; color:#475569;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>Estimated Material Supplies:</span><strong id="contract-mat-total">$0.00</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>Estimated Labor Subtotal:</span><strong id="contract-labor-total">$0.00</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Expected Total Project Draw:</span><strong id="contract-grand-total" style="color:var(--primary-orange);">$0.00</strong></div>
+              </div>
+            </div>
+
+            <div class="contract-clause">
+              <div class="contract-clause-header">4. TIME OF PERFORMANCE SCHEDULE</div>
+              <div class="contract-clause-text">
+                The construction project is scheduled to initiate on or about 
+                <strong id="contract-start-date">Start Date</strong>, and target an expected completion date of 
+                <strong id="contract-end-date">End Date</strong>. Delays caused by weather, material supply chain disruptions, or inspection delays will adjust target deadlines.
+              </div>
+            </div>
+
+            <div class="contract-clause">
+              <div class="contract-clause-header">5. CONTRACTUAL WARRANTY & DISPUTES</div>
+              <div class="contract-clause-text">
+                All structural and material crafts executed by the Contractor are warrantied for a duration of one (1) year post handover. Any legal disputes arising from contract performance will be submitted to arbitration in accordance with local builder regulations.
+              </div>
+            </div>
+
+            <!-- Signatures Section -->
+            <div class="contract-signatures">
+              <div class="signature-line-box">
+                <div class="signature-line-mark" id="sig-box-client">
+                  <!-- Rendered dynamically -->
+                  <span class="signature-typed" id="sig-typed-client"></span>
+                </div>
+                <div class="signature-name-label" id="sig-label-client">Owner Signature Required</div>
+                <div class="signature-role">OWNER / CLIENT</div>
+                
+                <div class="signature-input-group" id="sig-inputs-client">
+                  <input type="text" id="sig-input-client-text" class="signature-input" placeholder="Type Client Name">
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-sign-client" style="padding:0.25rem 0.5rem;">Sign</button>
+                </div>
+              </div>
+
+              <div class="signature-line-box">
+                <div class="signature-line-mark" id="sig-box-contractor">
+                  <!-- Rendered dynamically -->
+                  <span class="signature-typed" id="sig-typed-contractor"></span>
+                </div>
+                <div class="signature-name-label">BuildFlow Construction Rep</div>
+                <div class="signature-role">CONTRACTOR REPRESENTATIVE</div>
+                
+                <div class="signature-input-group" id="sig-inputs-contractor">
+                  <input type="text" id="sig-input-contractor-text" class="signature-input" placeholder="Type Rep Name">
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-sign-contractor" style="padding:0.25rem 0.5rem;">Sign</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Tab 2: Invoices & Materials -->
+        <div class="tab-pane" id="tab-invoices">
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+            <h3 class="form-section-title" style="margin-bottom:0;"><i data-lucide="receipt"></i> Financial Estimates & Invoices</h3>
+            <button class="btn btn-primary btn-sm" id="btn-create-invoice"><i data-lucide="file-plus"></i> Draft New Invoice</button>
+          </div>
+
+          <div class="job-invoices-section" id="job-invoices-list">
+            <!-- Dynamic invoices list populated by app.js -->
+          </div>
+
+        </div>
+
+      </div>
+      <div class="drawer-footer">
+        <button class="btn btn-secondary" id="details-close-btn">Close Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DRAFT / EDIT INVOICE (SIDE OVERLAY ON TOP) -->
+  <div class="backdrop" id="invoice-drawer-backdrop" style="z-index:150;">
+    <div class="drawer">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <h2 class="drawer-title" id="invoice-drawer-title">New Construction Invoice</h2>
+          <span class="drawer-subtitle" id="invoice-drawer-subtitle">Track material pricing, labor units, and taxes</span>
+        </div>
+        <button class="btn-close" id="invoice-drawer-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="drawer-body">
+        
+        <form id="invoice-form">
+          <input type="hidden" id="invoice-id-field">
+          
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="file-text"></i> Invoice Settings</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="invoice-num-field">Invoice / Quote Number</label>
+                <input type="text" id="invoice-num-field" class="input-field" placeholder="e.g. INV-1001" required>
+              </div>
+              <div class="form-group">
+                <label for="invoice-status-field">Status</label>
+                <select id="invoice-status-field">
+                  <option value="draft">Draft</option>
+                  <option value="sent">Sent (Unpaid)</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="invoice-date-field">Issue Date</label>
+                <input type="date" id="invoice-date-field" class="input-field" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Picker Panel -->
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="shopping-cart"></i> Add Materials from Catalog</h3>
+            
+            <div class="catalog-picker">
+              <div class="picker-search-group">
+                <input type="text" id="catalog-search" class="input-field" style="padding:0.5rem 0.75rem;" placeholder="Search concrete, wood, wire, PVC...">
+                <button class="btn btn-secondary btn-sm" type="button" id="btn-clear-search">Reset</button>
+              </div>
+              
+              <div class="catalog-search-results" id="catalog-results-container">
+                <!-- Catalog entries list loaded dynamically -->
+              </div>
+              
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="custom-product-trigger" id="add-custom-material-trigger">
+                  <i data-lucide="plus-circle" style="width:12px; height:12px; display:inline-block; vertical-align:middle;"></i> Add Custom Product Not in Catalog
+                </span>
+              </div>
+
+              <!-- Inline custom product adder form (toggled) -->
+              <div id="custom-product-form-panel" style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px dashed var(--border-color); gap: 0.5rem; flex-direction: column;">
+                <h4 style="font-size:0.8rem; font-weight:700;">Add Custom Item Details</h4>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <input type="text" id="custom-prod-name" class="input-field" placeholder="Material Name" style="padding:0.4rem 0.6rem; font-size:0.8rem;">
+                  </div>
+                  <div class="form-group">
+                    <select id="custom-prod-category" style="padding:0.4rem 0.6rem; font-size:0.8rem; padding-right:1.5rem;">
+                      <option value="Structural">Structural</option>
+                      <option value="Electrical">Electrical</option>
+                      <option value="Plumbing">Plumbing</option>
+                      <option value="Finishes">Finishes</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <input type="text" id="custom-prod-unit" class="input-field" placeholder="Unit (e.g. piece, sq ft)" style="padding:0.4rem 0.6rem; font-size:0.8rem;">
+                  </div>
+                  <div class="form-group">
+                    <input type="number" id="custom-prod-price" class="input-field" placeholder="Unit Price ($)" min="0" step="0.01" style="padding:0.4rem 0.6rem; font-size:0.8rem;">
+                  </div>
+                </div>
+                <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.5rem;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-custom-cancel" style="padding:0.25rem 0.5rem;">Cancel</button>
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-custom-save" style="padding:0.25rem 0.5rem;">Save & Add</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Materials Invoice Table -->
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="list"></i> Materials & Products Needed</h3>
+            
+            <div class="items-list-container">
+              <table class="invoice-table" id="invoice-items-table">
+                <thead>
+                  <tr>
+                    <th>Material Name</th>
+                    <th style="width: 80px;">Qty</th>
+                    <th style="width: 100px;">Rate ($)</th>
+                    <th style="width: 80px;">Unit</th>
+                    <th style="width: 90px;">Total ($)</th>
+                    <th style="width: 50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="invoice-items-tbody">
+                  <!-- Dynamic materials rows inserted by app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Labor, Markup, Taxes and Calculations -->
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="calculator"></i> Calculations & Service Costs</h3>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="invoice-labor-rate">Labor Cost ($)</label>
+                <input type="number" id="invoice-labor-rate" class="input-field" placeholder="Labor Subtotal" min="0" value="0" step="10">
+              </div>
+              <div class="form-group">
+                <label for="invoice-markup-rate">Contractor Markup (%)</label>
+                <input type="number" id="invoice-markup-rate" class="input-field" placeholder="e.g. 15%" min="0" value="10" step="1">
+              </div>
+              <div class="form-group">
+                <label for="invoice-tax-rate">Local Tax Rate (%)</label>
+                <input type="number" id="invoice-tax-rate" class="input-field" placeholder="e.g. 8.25%" min="0" value="8" step="0.25">
+              </div>
+            </div>
+          </div>
+
+          <!-- Cost Summary & Visual Graphic -->
+          <div class="invoice-summary-grid">
+            <div class="invoice-summary-table">
+              <div class="summary-row">
+                <span class="label">Materials Subtotal:</span>
+                <span class="value" id="subtotal-materials">$0.00</span>
+              </div>
+              <div class="summary-row">
+                <span class="label">Labor Costs:</span>
+                <span class="value" id="subtotal-labor">$0.00</span>
+              </div>
+              <div class="summary-row">
+                <span class="label">Contractor Markup:</span>
+                <span class="value" id="subtotal-markup">$0.00</span>
+              </div>
+              <div class="summary-row">
+                <span class="label">Taxes & Fees:</span>
+                <span class="value" id="subtotal-tax">$0.00</span>
+              </div>
+              <div class="summary-row total">
+                <span class="label">Invoice Grand Total:</span>
+                <span class="value" id="grand-total-price">$0.00</span>
+              </div>
+            </div>
+
+            <!-- Custom SVG Donut Chart showing pricing ratios -->
+            <div class="chart-container">
+              <span class="chart-title">Estimated Cost Ratios</span>
+              <svg width="150" height="150" viewBox="0 0 150 150" id="cost-donut-svg">
+                <!-- SVG graphic rendered dynamically by code -->
+              </svg>
+            </div>
+          </div>
+
+        </form>
+
+      </div>
+      <div class="drawer-footer">
+        <button class="btn btn-secondary" id="invoice-drawer-cancel">Cancel</button>
+        <button class="btn btn-success" id="invoice-drawer-submit"><i data-lucide="check"></i> Save Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRISTINE PRINT VIEW CONTAINER (Hidden on Screen, Active on Print) -->
+  <div id="print-container">
+    <div class="print-invoice-box">
+      <div class="print-header">
+        <div>
+          <div class="print-logo">BuildFlow</div>
+          <p style="font-size: 0.85rem; color: #555; margin-top: 0.25rem;">Premier Construction Contracting Services</p>
+        </div>
+        <div style="text-align: right;">
+          <h2 style="font-size: 1.7rem; font-weight: 800; color: #f97316;">INVOICE</h2>
+          <p class="print-info-text"><strong style="font-size: 1.1rem;" id="print-invoice-num">INV-XXXX</strong></p>
+          <p class="print-info-text">Issue Date: <span id="print-invoice-date">05/18/2026</span></p>
+          <p class="print-info-text">Status: <strong id="print-invoice-status" style="text-transform: uppercase;">PAID</strong></p>
+        </div>
+      </div>
+
+      <h1 class="print-job-title" id="print-job-title">Sunset Ridge Luxury Villa Refurbishment</h1>
+      <p style="font-size: 0.95rem; color:#444; margin-bottom: 2rem;"><i data-lucide="map-pin"></i> Site Location: <strong id="print-job-address">742 Evergreen Terr, Springfield</strong></p>
+
+      <div class="print-grid">
+        <div>
+          <div class="print-section-title">Client Billing Details</div>
+          <div class="print-info-text">
+            <strong style="font-size:1.05rem;" id="print-client-name">Robert Vance</strong><br>
+            Email: <span id="print-client-email">bob@vance.com</span><br>
+            Phone: <span id="print-client-phone">(555) 019-2831</span>
+          </div>
+        </div>
+        <div>
+          <div class="print-section-title">Contractor Details</div>
+          <div class="print-info-text">
+            <strong>BuildFlow Construction LLC</strong><br>
+            100 Industrial Parkway, Suite A<br>
+            Lic. #BC-987152A | Phone: (555) 892-0010<br>
+            Email: operations@buildflow-contracting.com
+          </div>
+        </div>
+      </div>
+
+      <div class="print-section-title">Itemized Materials & Supplies Breakdown</div>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Product / Material Description</th>
+            <th style="text-align: center; width: 80px;">Quantity</th>
+            <th style="text-align: right; width: 110px;">Unit Rate ($)</th>
+            <th style="text-align: center; width: 80px;">Unit</th>
+            <th style="text-align: right; width: 120px;">Total Cost ($)</th>
+          </tr>
+        </thead>
+        <tbody id="print-items-tbody">
+          <!-- Populated dynamically upon triggering window.print() -->
+        </tbody>
+      </table>
+
+      <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+        <div style="max-width: 400px; font-size: 0.8rem; color: #666; line-height: 1.4;">
+          <strong>Payment Terms & Conditions</strong><br>
+          Payment is due within 15 days of invoice issuance. Interest charges of 1.5% per month will apply to overdue payments. We accept wire transfers, checks, and major business cards. Thanks for your business!
+        </div>
+        <div class="print-totals">
+          <div class="print-total-row">
+            <span>Materials Subtotal:</span>
+            <span id="print-subtotal-materials">$0.00</span>
+          </div>
+          <div class="print-total-row">
+            <span>Labor & Specialized Services:</span>
+            <span id="print-subtotal-labor">$0.00</span>
+          </div>
+          <div class="print-total-row">
+            <span>Contractor Markup (%):</span>
+            <span id="print-subtotal-markup">$0.00</span>
+          </div>
+          <div class="print-total-row">
+            <span>Taxes & Fees (%):</span>
+            <span id="print-subtotal-tax">$0.00</span>
+          </div>
+          <div class="print-total-row grand">
+            <span>Grand Total Due:</span>
+            <span id="print-grand-total">$0.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL SCREEN LOGIN/SIGNUP OVERLAY -->
+  <div class="login-overlay active" id="login-overlay">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-section">
+          <div class="logo-icon">BF</div>
+          <div class="logo-text">BuildFlow Cloud</div>
+        </div>
+        <p class="login-tagline">Premium Construction Project & Invoice Ecosystem</p>
+      </div>
+      
+      <div class="login-body">
+        <!-- Auth Tabs -->
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="btn-auth-login">Sign In</button>
+          <button class="auth-tab-btn" id="btn-auth-signup">Create Account</button>
+        </div>
+
+        <form id="auth-form" style="display:flex; flex-direction:column; gap:1rem;">
+          <div class="form-group">
+            <label for="auth-email">Email Address</label>
+            <input type="email" id="auth-email" class="input-field" placeholder="e.g. contractor@buildflow.com" required>
+          </div>
+          <div class="form-group">
+            <label for="auth-password">Password</label>
+            <input type="password" id="auth-password" class="input-field" placeholder="••••••••" required>
+          </div>
+
+          <!-- Supabase Config Toggle -->
+          <div class="supabase-toggle-section">
+            <label class="crew-checkbox-label">
+              <input type="checkbox" id="enable-supabase-chk">
+              <span style="font-size:0.75rem; font-weight:600; color:var(--primary-orange);">Enable Real Supabase Cloud Sync</span>
+            </label>
+            <div id="supabase-config-inputs" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.5rem; padding:0.75rem; background:rgba(0,0,0,0.2); border-radius:4px; border:1px solid rgba(255,255,255,0.05);">
+              <div class="form-group">
+                <label style="font-size:0.7rem; color:var(--text-muted);">SUPABASE_URL</label>
+                <input type="text" id="supabase-url-input" class="input-field" style="padding:0.35rem 0.5rem; font-size:0.75rem;" placeholder="https://your-project.supabase.co">
+              </div>
+              <div class="form-group">
+                <label style="font-size:0.7rem; color:var(--text-muted);">SUPABASE_ANON_KEY</label>
+                <input type="password" id="supabase-key-input" class="input-field" style="padding:0.35rem 0.5rem; font-size:0.75rem;" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+              </div>
+              <p style="font-size:0.6rem; color:var(--text-muted); margin:0; line-height:1.3;">If enabled, BuildFlow will authenticate and synchronize jobs/invoices directly to your live Supabase DB for Vercel deployment.</p>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem;" id="auth-submit-btn">
+            Sign In with BuildFlow
+          </button>
+        </form>
+
+        <div style="text-align:center; margin-top:1rem; border-top:1px dashed var(--border-color); padding-top:1rem;">
+          <span style="font-size:0.75rem; color:var(--text-muted);">Or bypass cloud authentication:</span>
+          <button class="btn btn-secondary btn-sm" id="btn-offline-sandbox" style="width:100%; margin-top:0.5rem; font-size:0.8rem; justify-content:center;">
+            Launch Local Sandbox Mode (Offline)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CLOUD & SUBSCRIPTION DRAWER -->
+  <div class="backdrop" id="cloud-drawer-backdrop" style="z-index:200;">
+    <div class="drawer wide">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <h2 class="drawer-title">BuildFlow Cloud & Subscriptions</h2>
+          <span class="drawer-subtitle">Manage plan levels, cloud integrations, and partner branding</span>
+        </div>
+        <button class="btn-close" id="cloud-drawer-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="drawer-body">
+        
+        <!-- Pricing Matrix Grid -->
+        <div class="form-section">
+          <h3 class="form-section-title"><i data-lucide="award"></i> Choose Your Contractor Tier</h3>
+          <div class="pricing-grid">
+            
+            <!-- Tier 1: Free -->
+            <div class="pricing-card" id="pricing-card-free">
+              <div class="pricing-header">
+                <span class="pricing-tier-name">Free Sandbox</span>
+                <div class="pricing-cost">
+                  <span class="price">$0</span>
+                  <span class="period">/forever</span>
+                </div>
+              </div>
+              <div class="pricing-body">
+                <ul class="pricing-features">
+                  <li><i data-lucide="check"></i> 1 Active Construction Job</li>
+                  <li><i data-lucide="check"></i> Standard Invoice Calculations</li>
+                  <li><i data-lucide="check"></i> Deterministic Map Outlines</li>
+                  <li class="disabled"><i data-lucide="x"></i> Milestones Timeline Tracks</li>
+                  <li class="disabled"><i data-lucide="x"></i> Legal Digital Contract Signing</li>
+                  <li class="disabled"><i data-lucide="x"></i> Post Partner Logos on Site</li>
+                </ul>
+                <button class="btn btn-secondary btn-sm pricing-action-btn" id="btn-select-free">Current Plan</button>
+              </div>
+            </div>
+
+            <!-- Tier 2: Pro -->
+            <div class="pricing-card premium" id="pricing-card-pro">
+              <div class="pricing-popular-badge">POPULAR</div>
+              <div class="pricing-header">
+                <span class="pricing-tier-name">Pro Contractor</span>
+                <div class="pricing-cost">
+                  <span class="price">$29</span>
+                  <span class="period">/month</span>
+                </div>
+              </div>
+              <div class="pricing-body">
+                <ul class="pricing-features">
+                  <li><i data-lucide="check"></i> Unlimited Active Jobs</li>
+                  <li><i data-lucide="check"></i> Advanced Cost Ratio Donut Chart</li>
+                  <li><i data-lucide="check"></i> Custom Supplies Drawer Catalog</li>
+                  <li><i data-lucide="check"></i> Milestone Schedules Timeline</li>
+                  <li><i data-lucide="check"></i> Legal Contracts & Digital Seal</li>
+                  <li><i data-lucide="check"></i> Post Partner Logo on Homepage</li>
+                </ul>
+                <button class="btn btn-primary btn-sm pricing-action-btn" id="btn-select-pro">Upgrade to Pro</button>
+              </div>
+            </div>
+
+            <!-- Tier 3: Enterprise -->
+            <div class="pricing-card" id="pricing-card-enterprise">
+              <div class="pricing-header">
+                <span class="pricing-tier-name">Enterprise Suite</span>
+                <div class="pricing-cost">
+                  <span class="price">$89</span>
+                  <span class="period">/month</span>
+                </div>
+              </div>
+              <div class="pricing-body">
+                <ul class="pricing-features">
+                  <li><i data-lucide="check"></i> Everything in Pro</li>
+                  <li><i data-lucide="check"></i> Multi-crew Assignments</li>
+                  <li><i data-lucide="check"></i> Live Weather safety indexing</li>
+                  <li><i data-lucide="check"></i> Custom Domain (Vercel Ready)</li>
+                  <li><i data-lucide="check"></i> Dedicated Lead Engineering</li>
+                  <li><i data-lucide="check"></i> Priority Supabase Cloud Sync</li>
+                </ul>
+                <button class="btn btn-secondary btn-sm pricing-action-btn" id="btn-select-enterprise">Go Enterprise</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Promo Code & Branding upload -->
+        <div class="form-grid" style="margin-top: 2rem;">
+          
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="ticket"></i> Apply Special Promo Code</h3>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.75rem;">Unlock premium subscriptions for free using exclusive campaign promo codes.</p>
+            <div style="display:flex; gap:0.5rem;">
+              <input type="text" id="promo-code-input" class="input-field" placeholder="e.g. FREEBUILD" style="text-transform:uppercase;">
+              <button class="btn btn-primary btn-sm" id="btn-apply-promo" style="padding:0 1rem;">Apply Code</button>
+            </div>
+            <div id="promo-success-msg" style="display:none; font-size:0.75rem; color:var(--success-green); font-weight:600; margin-top:0.5rem;">
+              <i data-lucide="check-circle" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Code accepted! Unlocked Pro Plan.
+            </div>
+          </div>
+
+          <div class="form-section" id="partner-logo-section">
+            <h3 class="form-section-title"><i data-lucide="image"></i> Partner & Sponsor Branding</h3>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.75rem;">PRO & Enterprise subscribers can upload their custom branding to display in our partner banner.</p>
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div style="display:flex; gap:0.5rem;">
+                <input type="text" id="partner-logo-url-input" class="input-field" placeholder="Paste Logo Image URL (e.g. https://...)">
+                <button class="btn btn-secondary btn-sm" id="btn-save-partner-logo">Save Logo</button>
+              </div>
+              <div style="display:flex; align-items:center; gap:1rem; padding:0.75rem; background:var(--accent-tint); border:1px solid var(--border-color-light); border-radius:var(--border-radius-sm);">
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Preview Banner:</div>
+                <div id="partner-logo-preview-box" style="height:32px; display:flex; align-items:center; justify-content:center; max-width:120px;">
+                  <span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">No custom logo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Start Fresh / Clear data -->
+        <div class="form-section" style="margin-top: 2rem; border-top: 1px dashed var(--border-color); padding-top: 2rem;">
+          <h3 class="form-section-title" style="color:var(--danger-red);"><i data-lucide="alert-triangle"></i> Developer Sandbox Settings</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(239, 68, 68, 0.05); padding:1rem; border:1px solid rgba(239, 68, 68, 0.15); border-radius:var(--border-radius-md);">
+            <div style="max-width:500px;">
+              <h4 style="font-size:0.85rem; font-weight:700; color:var(--text-main); margin-bottom:0.25rem;">Start with a Clean Slate (Remove Mock Data)</h4>
+              <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; margin:0;">Wipes all mock jobs, workers, and invoice estimates so you can fill in your own raw data and test fresh.</p>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn btn-secondary btn-sm" id="btn-restore-mock-data">Load Mock Demo Data</button>
+              <button class="btn btn-danger btn-sm" id="btn-clear-mock-data">Wipe & Start Fresh</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="drawer-footer">
+        <button class="btn btn-secondary" id="cloud-drawer-close-btn">Close Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase JS Client library CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Scripts -->
+  <script src="catalog.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
