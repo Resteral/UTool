@@ -25,8 +25,8 @@ let STATE = {
 // Supabase client instance (initialized on demand if credentials provided)
 let supabaseClient = null;
 
-// --- WORKER Crew Repository ---
-const SEED_WORKERS = [
+// --- DEMO SEED DATA BACKUPS ---
+const DEMO_WORKERS = [
   { id: "w1", name: "Marcus Aurelius", role: "Project Manager", rate: 450, email: "marcus@buildflow.com", phone: "(555) 012-3401" },
   { id: "w2", name: "Sarah Connor", role: "Structural Engineer", rate: 550, email: "sarah@buildflow.com", phone: "(555) 012-3402" },
   { id: "w3", name: "John Doe", role: "Lead Electrician", rate: 380, email: "john@buildflow.com", phone: "(555) 012-3403" },
@@ -34,8 +34,7 @@ const SEED_WORKERS = [
   { id: "w5", name: "Bob Builder", role: "Carpentry Foreman", rate: 320, email: "bob@buildflow.com", phone: "(555) 012-3405" }
 ];
 
-// --- REALISTIC SEED DATA ---
-const SEED_JOBS = [
+const DEMO_JOBS = [
   {
     id: "job_1",
     title: "Sunset Ridge Luxury Villa",
@@ -176,6 +175,12 @@ const SEED_JOBS = [
   }
 ];
 
+// --- WORKER Crew Repository ---
+const SEED_WORKERS = [];
+
+// --- REALISTIC SEED DATA ---
+const SEED_JOBS = [];
+
 // --- INITIALIZE APPLICATION ---
 document.addEventListener("DOMContentLoaded", () => {
   loadData();
@@ -189,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // --- PERSISTENCE ---
-function loadData() {
+async function loadData() {
   // Load Session details
   STATE.userSession = localStorage.getItem("buildflow_session") ? JSON.parse(localStorage.getItem("buildflow_session")) : null;
   STATE.subscriptionPlan = localStorage.getItem("buildflow_plan") || "free";
@@ -202,32 +207,72 @@ function loadData() {
     try {
       supabaseClient = supabase.createClient(STATE.supabaseUrl, STATE.supabaseAnonKey);
       console.log("Supabase Client initialized successfully.");
+      
+      // Fetch public partners and jobs from Supabase so all customers can see them
+      await loadFromSupabase();
     } catch(err) {
       console.error("Failed to initialize Supabase client:", err);
     }
   }
 
-  const localJobs = localStorage.getItem("buildflow_jobs");
-  if (!localJobs) {
-    STATE.jobs = SEED_JOBS;
-    saveData();
-  } else {
-    STATE.jobs = JSON.parse(localJobs);
+  // Load from local storage if supabase didn't load or as fallback
+  if (!STATE.jobs || STATE.jobs.length === 0) {
+    const localJobs = localStorage.getItem("buildflow_jobs");
+    if (!localJobs) {
+      STATE.jobs = SEED_JOBS;
+      saveData();
+    } else {
+      STATE.jobs = JSON.parse(localJobs);
+    }
   }
 
-  const localWorkers = localStorage.getItem("buildflow_workers");
-  if (!localWorkers) {
-    STATE.workers = SEED_WORKERS;
-    localStorage.setItem("buildflow_workers", JSON.stringify(SEED_WORKERS));
-  } else {
-    STATE.workers = JSON.parse(localWorkers);
+  if (!STATE.workers || STATE.workers.length === 0) {
+    const localWorkers = localStorage.getItem("buildflow_workers");
+    if (!localWorkers) {
+      STATE.workers = SEED_WORKERS;
+      localStorage.setItem("buildflow_workers", JSON.stringify(SEED_WORKERS));
+    } else {
+      STATE.workers = JSON.parse(localWorkers);
+    }
   }
   
   updateSubscriptionUI();
 }
 
+async function loadFromSupabase() {
+  try {
+    // 1. Fetch public partner logos so that all customers see all certified partners
+    const { data: partnerData, error: partnerError } = await supabaseClient
+      .from('buildflow_partners')
+      .select('*');
+      
+    if (!partnerError && partnerData) {
+      STATE.registeredPartners = partnerData.map(p => ({
+        name: p.name,
+        logo: p.logo_url
+      }));
+      console.log("Loaded registered partners from Supabase:", STATE.registeredPartners);
+    }
+
+    // 2. Fetch jobs if logged in
+    if (STATE.userSession) {
+      const { data: jobsData, error: jobsError } = await supabaseClient
+        .from('buildflow_jobs')
+        .select('*')
+        .eq('user_id', STATE.userSession.id);
+        
+      if (!jobsError && jobsData) {
+        STATE.jobs = jobsData.map(d => d.data);
+      }
+    }
+  } catch (err) {
+    console.warn("Supabase fetch failed (falling back to offline mode):", err);
+  }
+}
+
 function saveData() {
   localStorage.setItem("buildflow_jobs", JSON.stringify(STATE.jobs));
+  localStorage.setItem("buildflow_workers", JSON.stringify(STATE.workers));
   localStorage.setItem("buildflow_session", STATE.userSession ? JSON.stringify(STATE.userSession) : "");
   localStorage.setItem("buildflow_plan", STATE.subscriptionPlan);
   localStorage.setItem("buildflow_logo", STATE.partnerLogoUrl);
@@ -385,29 +430,19 @@ function initEventListeners() {
 
 // --- RENDER STATISTICS ---
 function renderStats() {
-  const activeJobs = STATE.jobs.filter(j => j.status === "in-progress" || j.status === "delayed").length;
+  const totalJobs = STATE.jobs.length;
+  const totalCrew = STATE.workers.length;
+  const totalCatalogItems = getCatalog().length;
   
-  let totalRevenue = 0;
-  let outstanding = 0;
-  let collected = 0;
-
+  let totalInvoices = 0;
   STATE.jobs.forEach(job => {
-    totalRevenue += parseFloat(job.budget || 0);
-    
-    (job.invoices || []).forEach(inv => {
-      const invTotals = getInvoiceFinancialTotals(inv);
-      if (inv.status === "paid") {
-        collected += invTotals.grandTotal;
-      } else if (inv.status === "sent" || inv.status === "overdue") {
-        outstanding += invTotals.grandTotal;
-      }
-    });
+    totalInvoices += (job.invoices || []).length;
   });
 
-  document.getElementById("stat-active-jobs").textContent = activeJobs;
-  document.getElementById("stat-total-revenue").textContent = formatCurrency(totalRevenue);
-  document.getElementById("stat-outstanding").textContent = formatCurrency(outstanding);
-  document.getElementById("stat-collected").textContent = formatCurrency(collected);
+  document.getElementById("stat-active-jobs").textContent = totalJobs;
+  document.getElementById("stat-total-revenue").textContent = totalCrew;
+  document.getElementById("stat-outstanding").textContent = totalCatalogItems;
+  document.getElementById("stat-collected").textContent = totalInvoices;
 }
 
 // --- RENDERING JOBS ---
@@ -2049,8 +2084,9 @@ function renderPartnerMarquee() {
 
 // Developer Sandbox Data wipes & restores
 function handleClearMockData() {
-  if (confirm("Are you sure you want to delete all demo jobs, invoices, and timeline history? This starts with a clean empty slate to fill in your own data.")) {
+  if (confirm("Are you sure you want to delete all demo jobs, invoices, crew members, and timeline history? This starts with a clean empty slate to fill in your own data.")) {
     STATE.jobs = [];
+    STATE.workers = [];
     saveData();
     renderStats();
     renderJobs();
@@ -2059,8 +2095,9 @@ function handleClearMockData() {
 }
 
 function handleRestoreMockData() {
-  if (confirm("This will restore default Springfield Villa and Downtown Plaza demo project sheets. Proceed?")) {
-    STATE.jobs = SEED_JOBS;
+  if (confirm("This will restore default Springfield Villa and Downtown Plaza demo project sheets and crew members. Proceed?")) {
+    STATE.jobs = JSON.parse(JSON.stringify(DEMO_JOBS));
+    STATE.workers = JSON.parse(JSON.stringify(DEMO_WORKERS));
     saveData();
     renderStats();
     renderJobs();
