@@ -25,155 +25,7 @@ let STATE = {
 // Supabase client instance (initialized on demand if credentials provided)
 let supabaseClient = null;
 
-// --- DEMO SEED DATA BACKUPS ---
-const DEMO_WORKERS = [
-  { id: "w1", name: "Marcus Aurelius", role: "Project Manager", rate: 450, email: "marcus@buildflow.com", phone: "(555) 012-3401" },
-  { id: "w2", name: "Sarah Connor", role: "Structural Engineer", rate: 550, email: "sarah@buildflow.com", phone: "(555) 012-3402" },
-  { id: "w3", name: "John Doe", role: "Lead Electrician", rate: 380, email: "john@buildflow.com", phone: "(555) 012-3403" },
-  { id: "w4", name: "Jane Smith", role: "Lead Plumber", rate: 380, email: "jane@buildflow.com", phone: "(555) 012-3404" },
-  { id: "w5", name: "Bob Builder", role: "Carpentry Foreman", rate: 320, email: "bob@buildflow.com", phone: "(555) 012-3405" }
-];
 
-const DEMO_JOBS = [
-  {
-    id: "job_1",
-    title: "Sunset Ridge Luxury Villa",
-    description: "Full modern renovation of a 4,500 sq ft luxury residence. Phase 1 focuses on framing, foundation expansion, structural wall removal, and plumbing relocation. Phase 2 covers electrical wiring, drywall, and luxury finishes.",
-    address: "742 Evergreen Terr, Springfield",
-    status: "in-progress",
-    budget: 145000,
-    client: {
-      name: "Robert Vance",
-      email: "bob@vancerfg.com",
-      phone: "(555) 019-2831"
-    },
-    dates: {
-      start: "2026-04-10",
-      end: "2026-09-15"
-    },
-    assignedCrew: ["w1", "w3", "w5"],
-    milestones: [
-      { id: "m1", title: "Permits & Structural Blueprint Approval", date: "2026-04-12", status: "completed" },
-      { id: "m2", title: "Foundation Digging & Concrete Poured", date: "2026-04-28", status: "completed" },
-      { id: "m3", title: "Structural Framing Inspection", date: "2026-05-15", status: "completed" },
-      { id: "m4", title: "Rough Plumbing & Electrical Check", date: "2026-06-10", status: "pending" },
-      { id: "m5", title: "Drywall Install & Flooring Laydown", date: "2026-07-25", status: "pending" },
-      { id: "m6", title: "Client Final Handover", date: "2026-09-15", status: "pending" }
-    ],
-    contract: {
-      scope: "Contractor agrees to perform all demolition, debris disposal, framing, plumbing relocations, drywall hanging, taping, painting, structural support beam installations, and electrical rough-in and finish wiring as detailed on the client's blueprints.",
-      clientSigned: "Robert Vance",
-      contractorSigned: "BuildFlow Rep",
-      signedDate: "2026-04-10"
-    },
-    invoices: [
-      {
-        id: "inv_1_1",
-        invoiceNum: "INV-1001",
-        status: "paid",
-        date: "2026-04-15",
-        items: [
-          { name: "Concrete Mix (80lb bag)", qty: 60, rate: 7.50, unit: "bags" },
-          { name: "Steel Rebar (1/2\" x 20ft)", qty: 15, rate: 9.20, unit: "pieces" },
-          { name: "2x4 Lumber (8ft Stud)", qty: 120, rate: 4.25, unit: "pieces" },
-          { name: "Galvanized Nails (5lb box)", qty: 8, rate: 12.00, unit: "boxes" }
-        ],
-        labor: 4500,
-        markup: 15,
-        tax: 8.25
-      },
-      {
-        id: "inv_1_2",
-        invoiceNum: "INV-1002",
-        status: "sent",
-        date: "2026-05-12",
-        items: [
-          { name: "Romex 12/2 NM-B Wire (100ft)", qty: 4, rate: 78.00, unit: "rolls" },
-          { name: "Single-Gang Electrical Box", qty: 40, rate: 1.25, unit: "pieces" },
-          { name: "Double-Pole 20A Circuit Breaker", qty: 6, rate: 14.50, unit: "pieces" },
-          { name: "Standard Outlet (Duplex)", qty: 50, rate: 1.80, unit: "pieces" },
-          { name: "Conduit Pipe PVC (1/2\" x 10ft)", qty: 25, rate: 4.50, unit: "pieces" }
-        ],
-        labor: 3200,
-        markup: 15,
-        tax: 8.25
-      }
-    ]
-  },
-  {
-    id: "job_2",
-    title: "Downtown Plaza Structural Repairs",
-    description: "Seismic retrofitting and masonry repairs on commercial retail space. Work includes installing steel braces, replacing degraded structural brickwork, and repairing loading dock foundations.",
-    address: "456 Plaza Way, Gotham",
-    status: "completed",
-    budget: 92000,
-    client: {
-      name: "Selina Kyle",
-      email: "selina@kittycat.com",
-      phone: "(555) 981-4433"
-    },
-    dates: {
-      start: "2026-02-01",
-      end: "2026-04-20"
-    },
-    assignedCrew: ["w2"],
-    milestones: [
-      { id: "m2_1", title: "Structural Assessment", date: "2026-02-05", status: "completed" },
-      { id: "m2_2", title: "Masonry Prep Work", date: "2026-03-10", status: "completed" },
-      { id: "m2_3", title: "Steel Seismic Braces Fixed", date: "2026-04-18", status: "completed" }
-    ],
-    contract: {
-      scope: "Perform structural reinforcement including engineering drawings, masonry tuck-pointing, wall cracks stitching, lintel upgrades, and sub-surface foundation piles installation at loading dock site.",
-      clientSigned: "Selina Kyle",
-      contractorSigned: "BuildFlow Rep",
-      signedDate: "2026-02-01"
-    },
-    invoices: [
-      {
-        id: "inv_2_1",
-        invoiceNum: "INV-2001",
-        status: "paid",
-        date: "2026-04-22",
-        items: [
-          { name: "Concrete Mix (80lb bag)", qty: 150, rate: 7.50, unit: "bags" },
-          { name: "Steel Rebar (1/2\" x 20ft)", qty: 80, rate: 9.20, unit: "pieces" },
-          { name: "Wood Screws 3\" (100 pack)", qty: 10, rate: 8.50, unit: "packs" }
-        ],
-        labor: 12500,
-        markup: 18,
-        tax: 9.00
-      }
-    ]
-  },
-  {
-    id: "job_3",
-    title: "Commercial Office Refurbishment",
-    description: "Interior tenant improvement project for tech office space. Constructing modular drywalled meeting rooms, installing acoustic ceiling tile matrices, executing multi-circuit wiring plans, and laying premium hardwood floors.",
-    address: "100 Main St, Metropolis",
-    status: "planned",
-    budget: 68000,
-    client: {
-      name: "Lex Luthor",
-      email: "lex@luthorcorp.com",
-      phone: "(555) 111-9900"
-    },
-    dates: {
-      start: "2026-06-01",
-      end: "2026-08-30"
-    },
-    assignedCrew: [],
-    milestones: [
-      { id: "m3_1", title: "Acoustic Tile Blueprint Verification", date: "2026-05-25", status: "pending" }
-    ],
-    contract: {
-      scope: "Tenant improvement scope: demolish partition walls, construct new drywalled acoustic partition conference suites, wire premium floor boxes, fit multi-zone LED dimming systems, and sand and polish pre-engineered white oak planking.",
-      clientSigned: "",
-      contractorSigned: "",
-      signedDate: ""
-    },
-    invoices: []
-  }
-];
 
 // --- WORKER Crew Repository ---
 const SEED_WORKERS = [];
@@ -259,10 +111,11 @@ async function loadFromSupabase() {
       const { data: jobsData, error: jobsError } = await supabaseClient
         .from('buildflow_jobs')
         .select('*')
-        .eq('user_id', STATE.userSession.id);
+        .eq('id', STATE.userSession.id);
         
-      if (!jobsError && jobsData) {
-        STATE.jobs = jobsData.map(d => d.data);
+      if (!jobsError && jobsData && jobsData.length > 0) {
+        STATE.jobs = jobsData[0].jobs || [];
+        console.log("Loaded jobs from Supabase successfully:", STATE.jobs);
       }
     }
   } catch (err) {
@@ -425,7 +278,6 @@ function initEventListeners() {
 
   // Developer Sandbox controls
   document.getElementById("btn-clear-mock-data").addEventListener("click", handleClearMockData);
-  document.getElementById("btn-restore-mock-data").addEventListener("click", handleRestoreMockData);
 }
 
 // --- RENDER STATISTICS ---
@@ -1854,11 +1706,11 @@ function toggleAuthMode(isLogin) {
   if (isLogin) {
     loginTab.classList.add("active");
     signupTab.classList.remove("active");
-    submitBtn.textContent = "Sign In with BuildFlow";
+    submitBtn.textContent = "Sign In with UTool";
   } else {
     loginTab.classList.remove("active");
     signupTab.classList.add("active");
-    submitBtn.textContent = "Create BuildFlow Account";
+    submitBtn.textContent = "Create UTool Account";
   }
 }
 
@@ -1910,6 +1762,9 @@ async function handleAuthSubmit(e) {
         supabaseConnected: true
       };
       
+      // Load user data immediately upon login!
+      await loadFromSupabase();
+      
     } catch(err) {
       alert("Failed connecting to Supabase Cloud: " + err.message);
       return;
@@ -1928,12 +1783,12 @@ async function handleAuthSubmit(e) {
   renderJobs();
   
   // Show premium success welcome alert
-  alert("BuildFlow session successfully authenticated! Welcome " + STATE.userSession.email + (enableSupabase ? " (Supabase Sync Active)" : " (Sandbox Offline)"));
+  alert("UTool session successfully authenticated! Welcome " + STATE.userSession.email + (enableSupabase ? " (Supabase Sync Active)" : " (Sandbox Offline)"));
 }
 
 function handleBypassAuth() {
   STATE.userSession = {
-    email: "sandbox-guest@buildflow.com",
+    email: "sandbox-guest@utool.com",
     sandbox: true
   };
   saveData();
@@ -2094,16 +1949,7 @@ function handleClearMockData() {
   }
 }
 
-function handleRestoreMockData() {
-  if (confirm("This will restore default Springfield Villa and Downtown Plaza demo project sheets and crew members. Proceed?")) {
-    STATE.jobs = JSON.parse(JSON.stringify(DEMO_JOBS));
-    STATE.workers = JSON.parse(JSON.stringify(DEMO_WORKERS));
-    saveData();
-    renderStats();
-    renderJobs();
-    alert("Demo construction jobs sheets successfully restored!");
-  }
-}
+
 
 // Supabase cloud sync logic
 async function syncToSupabaseCloud() {
