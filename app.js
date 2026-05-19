@@ -115,7 +115,8 @@ async function loadFromSupabase() {
         
       if (!jobsError && jobsData && jobsData.length > 0) {
         STATE.jobs = jobsData[0].jobs || [];
-        console.log("Loaded jobs from Supabase successfully:", STATE.jobs);
+        STATE.workers = jobsData[0].workers || [];
+        console.log("Loaded jobs and workers from Supabase successfully:", STATE.jobs, STATE.workers);
       }
     }
   } catch (err) {
@@ -237,6 +238,15 @@ function initEventListeners() {
   document.getElementById("invoice-labor-rate").addEventListener("input", calculateTotals);
   document.getElementById("invoice-markup-rate").addEventListener("input", calculateTotals);
   document.getElementById("invoice-tax-rate").addEventListener("input", calculateTotals);
+
+  // Global Crew Manager Triggers
+  document.getElementById("manage-crew-btn").addEventListener("click", openCrewDrawer);
+  document.getElementById("crew-drawer-close").addEventListener("click", closeCrewDrawer);
+  document.getElementById("crew-drawer-cancel").addEventListener("click", closeCrewDrawer);
+  document.getElementById("btn-add-crew-member").addEventListener("click", handleAddGlobalCrew);
+
+  // AI Receipt Scanner
+  document.getElementById("receipt-upload-input").addEventListener("change", handleReceiptUpload);
 
   // Crew & Milestone Action Listeners
   document.getElementById("btn-assign-crew-member").addEventListener("click", handleAssignCrewMember);
@@ -1967,6 +1977,108 @@ function handleClearMockData() {
 
 
 
+// --- AI RECEIPT SCANNER ---
+function handleReceiptUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const idleUI = document.getElementById("receipt-scanner-idle");
+  const loadingUI = document.getElementById("receipt-scanner-loading");
+  
+  idleUI.style.display = "none";
+  loadingUI.style.display = "flex";
+
+  // Simulate AI parsing delay (1.5 seconds)
+  setTimeout(() => {
+    idleUI.style.display = "flex";
+    loadingUI.style.display = "none";
+    
+    // Clear input so same file can be selected again
+    e.target.value = "";
+
+    // Mock parsed data
+    const mockParsedItems = [
+      { name: "Scanned: Portland Cement 50lb", qty: 10, rate: 14.50, unit: "bag" },
+      { name: "Scanned: Framing Lumber 2x4x8", qty: 50, rate: 3.25, unit: "piece" }
+    ];
+
+    STATE.currentInvoiceItems.push(...mockParsedItems);
+    renderInvoiceTableItems();
+    calculateTotals();
+
+    alert("UTool AI successfully extracted 2 line items from the receipt image!");
+  }, 1500);
+}
+
+// --- GLOBAL CREW MANAGEMENT ---
+function openCrewDrawer() {
+  document.getElementById("new-crew-name").value = "";
+  renderGlobalCrew();
+  document.getElementById("crew-drawer-backdrop").classList.add("active");
+}
+
+function closeCrewDrawer() {
+  document.getElementById("crew-drawer-backdrop").classList.remove("active");
+}
+
+function renderGlobalCrew() {
+  const tbody = document.getElementById("global-crew-tbody");
+  tbody.innerHTML = "";
+
+  if (STATE.workers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 1.5rem; color:var(--text-muted);">No crew members in your roster. Add some above!</td></tr>`;
+    return;
+  }
+
+  STATE.workers.forEach(w => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong style="color:var(--text-main); font-size:0.85rem;">${escapeHTML(w.name)}</strong></td>
+      <td>${escapeHTML(w.role)}</td>
+      <td style="text-align:right;">
+        <button type="button" class="btn btn-danger btn-sm" style="padding:0.25rem 0.4rem; background:transparent; border:none; color:var(--danger-red);" onclick="handleRemoveGlobalCrew('${w.id}')">
+          <i data-lucide="trash" style="width:14px; height:14px;"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  lucide.createIcons();
+}
+
+function handleAddGlobalCrew() {
+  const name = document.getElementById("new-crew-name").value.trim();
+  const role = document.getElementById("new-crew-role").value;
+
+  if (!name) {
+    alert("Please enter a valid crew member name.");
+    return;
+  }
+
+  const newId = "w_" + Date.now();
+  STATE.workers.push({
+    id: newId,
+    name: name,
+    role: role
+  });
+
+  document.getElementById("new-crew-name").value = "";
+  
+  saveData();
+  renderGlobalCrew();
+  renderStats();
+}
+
+function handleRemoveGlobalCrew(workerId) {
+  if (confirm("Remove this crew member from your global roster? (They will remain on past jobs but cannot be assigned to new ones).")) {
+    STATE.workers = STATE.workers.filter(w => w.id !== workerId);
+    saveData();
+    renderGlobalCrew();
+    renderStats();
+  }
+}
+
 // Supabase cloud sync logic
 async function syncToSupabaseCloud() {
   if (!supabaseClient || !STATE.userSession || !STATE.userSession.supabaseConnected) return;
@@ -1985,7 +2097,8 @@ async function syncToSupabaseCloud() {
       .from('buildflow_jobs')
       .upsert({ 
         id: userId, 
-        jobs: STATE.jobs, 
+        jobs: STATE.jobs,
+        workers: STATE.workers,
         updated_at: new Date().toISOString() 
       });
       

@@ -1236,6 +1236,13 @@ label {
   }
 }
 
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }

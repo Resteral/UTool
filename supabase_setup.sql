@@ -32,6 +32,7 @@ CREATE POLICY "Allow public insert access on partners" ON public.buildflow_partn
 CREATE TABLE IF NOT EXISTS public.buildflow_jobs (
     id TEXT PRIMARY KEY, -- Stores the User Session ID (buildflow_session.id)
     jobs JSONB DEFAULT '[]'::jsonb NOT NULL, -- JSONB Array containing all construction projects, client profiles, milestones & invoices
+    workers JSONB DEFAULT '[]'::jsonb NOT NULL, -- JSONB Array containing global team/crew members
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

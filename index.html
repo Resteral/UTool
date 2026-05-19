@@ -49,6 +49,9 @@
         <button class="btn-theme-toggle" id="theme-toggle-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">
           <i data-lucide="sun"></i>
         </button>
+        <button class="btn btn-secondary" id="manage-crew-btn" title="Manage Crew Members">
+          <i data-lucide="users"></i> Manage Crew
+        </button>
         <button class="btn btn-primary" id="add-job-btn">
           <i data-lucide="plus"></i> Add New Job
         </button>
@@ -549,6 +552,23 @@
             </div>
           </div>
 
+          <!-- AI Receipt Scanner Panel -->
+          <div class="form-section">
+            <h3 class="form-section-title"><i data-lucide="camera"></i> AI Receipt Scanner</h3>
+            <div class="receipt-scanner-panel" style="padding: 1.5rem; border: 2px dashed var(--border-color); border-radius: var(--border-radius-md); text-align: center; position: relative;">
+              <input type="file" id="receipt-upload-input" accept="image/*" capture="environment" style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer; z-index:10;">
+              <div id="receipt-scanner-idle" style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; color:var(--text-muted);">
+                <i data-lucide="scan" style="width:36px; height:36px; color:var(--primary-orange);"></i>
+                <span style="font-weight:600; color:var(--text-main);">Tap to scan or upload a receipt</span>
+                <span style="font-size:0.8rem;">Our AI will automatically parse line items and prices.</span>
+              </div>
+              <div id="receipt-scanner-loading" style="display:none; flex-direction:column; align-items:center; gap:0.5rem; color:var(--primary-orange);">
+                <i data-lucide="loader" class="spinner" style="width:36px; height:36px;"></i>
+                <span style="font-weight:600;">Processing receipt via UTool AI...</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Product Picker Panel -->
           <div class="form-section">
             <h3 class="form-section-title"><i data-lucide="shopping-cart"></i> Add Materials from Catalog</h3>
@@ -684,6 +704,70 @@
       <div class="drawer-footer">
         <button class="btn btn-secondary" id="invoice-drawer-cancel">Cancel</button>
         <button class="btn btn-success" id="invoice-drawer-submit"><i data-lucide="check"></i> Save Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREW MANAGER DRAWER -->
+  <div class="backdrop" id="crew-drawer-backdrop" style="z-index:150;">
+    <div class="drawer">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <h2 class="drawer-title">Crew & Team Management</h2>
+          <span class="drawer-subtitle">Add or remove workers from your global contracting team</span>
+        </div>
+        <button class="btn-close" id="crew-drawer-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="drawer-body">
+        
+        <div class="form-section">
+          <h3 class="form-section-title"><i data-lucide="user-plus"></i> Add New Crew Member</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="new-crew-name">Full Name</label>
+              <input type="text" id="new-crew-name" class="input-field" placeholder="e.g. John Doe">
+            </div>
+            <div class="form-group">
+              <label for="new-crew-role">Job Title / Specialty</label>
+              <select id="new-crew-role" class="input-field">
+                <option value="Foreman">Foreman</option>
+                <option value="Electrician">Electrician</option>
+                <option value="Plumber">Plumber</option>
+                <option value="Carpenter">Carpenter</option>
+                <option value="Mason">Mason</option>
+                <option value="Laborer">General Laborer</option>
+                <option value="Heavy Equipment Operator">Heavy Equipment Operator</option>
+              </select>
+            </div>
+            <div class="form-group" style="display:flex; align-items:flex-end;">
+              <button class="btn btn-primary" id="btn-add-crew-member" style="width:100%;">Add to Roster</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 class="form-section-title"><i data-lucide="users"></i> Active Team Roster</h3>
+          <div class="items-list-container">
+            <table class="invoice-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role / Specialty</th>
+                  <th style="width: 80px; text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="global-crew-tbody">
+                <!-- Dynamically populated roster -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      <div class="drawer-footer">
+        <button class="btn btn-secondary" id="crew-drawer-cancel">Close Manager</button>
       </div>
     </div>
   </div>
