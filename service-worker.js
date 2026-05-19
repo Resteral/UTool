@@ -1,4 +1,4 @@
-const CACHE_NAME = 'utool-cache-v1';
+const CACHE_NAME = 'utool-cache-v2';
 const urlsToCache = [
   './',
   './index.html',
@@ -18,13 +18,18 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // Return cached response if found
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        // If network request succeeds, clone and update cache
+        const resClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, resClone);
+        });
+        return response;
+      })
+      .catch(() => {
+        // Fallback to cache if network fails (offline)
+        return caches.match(event.request);
       })
   );
 });
