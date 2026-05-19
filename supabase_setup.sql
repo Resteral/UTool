@@ -23,13 +23,6 @@ DROP POLICY IF EXISTS "Allow public insert access on partners" ON public.buildfl
 CREATE POLICY "Allow public insert access on partners" ON public.buildflow_partners FOR INSERT WITH CHECK (true);
 
 
--- Seed default construction certified partners
-INSERT INTO public.buildflow_partners (name, logo_url) VALUES 
-('Apex Steel Framing', 'https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=80&h=80&fit=crop'),
-('Titan Concrete Industries', 'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=80&h=80&fit=crop'),
-('Lumina Smart Wiring', 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=80&h=80&fit=crop'),
-('Metropolis Lumber Group', 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=80&h=80&fit=crop')
-ON CONFLICT DO NOTHING;
 
 
 -- =========================================================================
