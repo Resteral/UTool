@@ -461,6 +461,7 @@ select {
 .job-card.in-progress::before { background: var(--warning-yellow); }
 .job-card.completed::before { background: var(--success-green); }
 .job-card.delayed::before { background: var(--danger-red); }
+.job-card.on-hold::before { background: var(--text-muted); }
 
 .job-card:hover {
   transform: translateY(-4px);
@@ -517,6 +518,7 @@ select {
 .badge.in-progress { background: var(--warning-bg); color: var(--warning-yellow); }
 .badge.completed { background: var(--success-bg); color: var(--success-green); }
 .badge.delayed { background: var(--danger-bg); color: var(--danger-red); }
+.badge.on-hold { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
 
 .job-card-body {
   padding: 1.5rem;

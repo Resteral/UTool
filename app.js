@@ -411,14 +411,15 @@ function openJobDrawer(jobId = null) {
     document.getElementById("job-client-name").value = job.client.name;
     document.getElementById("job-client-email").value = job.client.email;
     document.getElementById("job-client-phone").value = job.client.phone;
-    document.getElementById("job-start-date").value = job.dates.start;
-    document.getElementById("job-end-date").value = job.dates.end;
+    document.getElementById("job-start-date").value = job.dates.start || "";
+    document.getElementById("job-end-date").value = job.dates.end || "";
     
     assignedIds = job.assignedCrew || [];
   } else {
     title.textContent = "Add Construction Job";
     document.getElementById("job-id-field").value = "";
-    document.getElementById("job-start-date").value = new Date().toISOString().split('T')[0];
+    document.getElementById("job-start-date").value = "";
+    document.getElementById("job-end-date").value = "";
   }
 
   STATE.workers.forEach(w => {
@@ -446,7 +447,7 @@ function submitJobForm(e) {
   const title = document.getElementById("job-title-field").value;
   const desc = document.getElementById("job-desc-field").value;
   const address = document.getElementById("job-address-field").value;
-  const status = document.getElementById("job-status-field").value;
+  let status = document.getElementById("job-status-field").value;
   const budget = parseFloat(document.getElementById("job-budget-field").value || 0);
   const clientName = document.getElementById("job-client-name").value;
   const clientEmail = document.getElementById("job-client-email").value;
@@ -461,6 +462,21 @@ function submitJobForm(e) {
   if (!title || !address || !clientName) {
     alert("Please fill in all required fields marked with *");
     return;
+  }
+
+  // --- AUTOMATE STATUS BASED ON DATES ---
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+
+  if (!startDate && !endDate) {
+    status = "on-hold";
+  } else if (startDate && startDate > todayStr) {
+    if (status === "in-progress") {
+      status = "planned";
+    }
   }
 
   if (jobId) {
@@ -495,8 +511,8 @@ function submitJobForm(e) {
       dates: { start: startDate, end: endDate },
       assignedCrew,
       milestones: [
-        { id: "m_" + Date.now() + "_1", title: "Project Initialized", date: startDate, status: "completed" },
-        { id: "m_" + Date.now() + "_2", title: "Site Foundation Assessment", date: startDate, status: "pending" }
+        { id: "m_" + Date.now() + "_1", title: "Project Initialized", date: startDate || todayStr, status: "completed" },
+        { id: "m_" + Date.now() + "_2", title: "Site Foundation Assessment", date: startDate || todayStr, status: "pending" }
       ],
       contract: {
         scope: desc || "Initial scope of work under discussion...",
@@ -1199,7 +1215,7 @@ function formatCompactCurrency(value) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return "N/A";
+  if (!dateStr) return "No Date";
   const date = new Date(dateStr + 'T00:00:00'); // Prevent UTC offset shifts
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
