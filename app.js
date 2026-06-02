@@ -47,12 +47,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // --- PERSISTENCE ---
 async function loadData() {
+  // --- MIGRATION FROM OLD 'BUILDFLOW' TO 'UTOOL' ---
+  const legacyKeys = ['session', 'plan', 'logo', 'supabase_url', 'supabase_key', 'jobs', 'workers', 'theme'];
+  legacyKeys.forEach(key => {
+    const oldVal = localStorage.getItem(`buildflow_${key}`);
+    if (oldVal !== null && localStorage.getItem(`utool_${key}`) === null) {
+      localStorage.setItem(`utool_${key}`, oldVal);
+      localStorage.removeItem(`buildflow_${key}`);
+    }
+  });
+  // ---------------------------------------------------
+
   // Load Session details
-  STATE.userSession = localStorage.getItem("buildflow_session") ? JSON.parse(localStorage.getItem("buildflow_session")) : null;
-  STATE.subscriptionPlan = localStorage.getItem("buildflow_plan") || "free";
-  STATE.partnerLogoUrl = localStorage.getItem("buildflow_logo") || "";
-  STATE.supabaseUrl = localStorage.getItem("buildflow_supabase_url") || "";
-  STATE.supabaseAnonKey = localStorage.getItem("buildflow_supabase_key") || "";
+  STATE.userSession = localStorage.getItem("utool_session") ? JSON.parse(localStorage.getItem("utool_session")) : null;
+  STATE.subscriptionPlan = localStorage.getItem("utool_plan") || "free";
+  STATE.partnerLogoUrl = localStorage.getItem("utool_logo") || "";
+  STATE.supabaseUrl = localStorage.getItem("utool_supabase_url") || "";
+  STATE.supabaseAnonKey = localStorage.getItem("utool_supabase_key") || "";
 
   // Connect to real Supabase client if configured
   if (STATE.supabaseUrl && STATE.supabaseAnonKey) {
@@ -69,7 +80,7 @@ async function loadData() {
 
   // Load from local storage if supabase didn't load or as fallback
   if (!STATE.jobs || STATE.jobs.length === 0) {
-    const localJobs = localStorage.getItem("buildflow_jobs");
+    const localJobs = localStorage.getItem("utool_jobs");
     if (!localJobs) {
       STATE.jobs = SEED_JOBS;
       saveData();
@@ -79,10 +90,10 @@ async function loadData() {
   }
 
   if (!STATE.workers || STATE.workers.length === 0) {
-    const localWorkers = localStorage.getItem("buildflow_workers");
+    const localWorkers = localStorage.getItem("utool_workers");
     if (!localWorkers) {
       STATE.workers = SEED_WORKERS;
-      localStorage.setItem("buildflow_workers", JSON.stringify(SEED_WORKERS));
+      localStorage.setItem("utool_workers", JSON.stringify(SEED_WORKERS));
     } else {
       STATE.workers = JSON.parse(localWorkers);
     }
@@ -125,21 +136,67 @@ async function loadFromSupabase() {
 }
 
 function saveData() {
-  localStorage.setItem("buildflow_jobs", JSON.stringify(STATE.jobs));
-  localStorage.setItem("buildflow_workers", JSON.stringify(STATE.workers));
-  localStorage.setItem("buildflow_session", STATE.userSession ? JSON.stringify(STATE.userSession) : "");
-  localStorage.setItem("buildflow_plan", STATE.subscriptionPlan);
-  localStorage.setItem("buildflow_logo", STATE.partnerLogoUrl);
-  localStorage.setItem("buildflow_supabase_url", STATE.supabaseUrl);
-  localStorage.setItem("buildflow_supabase_key", STATE.supabaseAnonKey);
+  localStorage.setItem("utool_jobs", JSON.stringify(STATE.jobs));
+  localStorage.setItem("utool_workers", JSON.stringify(STATE.workers));
+  localStorage.setItem("utool_session", STATE.userSession ? JSON.stringify(STATE.userSession) : "");
+  localStorage.setItem("utool_plan", STATE.subscriptionPlan);
+  localStorage.setItem("utool_logo", STATE.partnerLogoUrl);
+  localStorage.setItem("utool_supabase_url", STATE.supabaseUrl);
+  localStorage.setItem("utool_supabase_key", STATE.supabaseAnonKey);
   
   // Sync to Supabase in background if enabled
   syncToSupabaseCloud();
 }
 
+function exportDataToFile() {
+  const dataStr = JSON.stringify(STATE, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "utool_backup_" + new Date().toISOString().split("T")[0] + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importDataFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const importedState = JSON.parse(e.target.result);
+      if (importedState && importedState.jobs && importedState.workers) {
+        // Merge imported state
+        STATE.jobs = importedState.jobs;
+        STATE.workers = importedState.workers;
+        if (importedState.userSession !== undefined) STATE.userSession = importedState.userSession;
+        if (importedState.subscriptionPlan) STATE.subscriptionPlan = importedState.subscriptionPlan;
+        if (importedState.partnerLogoUrl !== undefined) STATE.partnerLogoUrl = importedState.partnerLogoUrl;
+        
+        saveData();
+        renderStats();
+        renderJobs();
+        updateSubscriptionUI();
+        alert("UTool data successfully imported!");
+      } else {
+        alert("Invalid UTool backup file.");
+      }
+    } catch (err) {
+      alert("Error parsing backup file: " + err.message);
+    }
+    // Reset file input
+    event.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
 // --- THEME MANAGEMENT ---
 function initTheme() {
-  const storedTheme = localStorage.getItem("buildflow_theme");
+  const storedTheme = localStorage.getItem("utool_theme");
   if (storedTheme) {
     STATE.theme = storedTheme;
   }
@@ -288,6 +345,10 @@ function initEventListeners() {
 
   // Developer Sandbox controls
   document.getElementById("btn-clear-mock-data").addEventListener("click", handleClearMockData);
+
+  // Data Persistence controls
+  document.getElementById("btn-export-data").addEventListener("click", exportDataToFile);
+  document.getElementById("input-import-data").addEventListener("change", importDataFromFile);
 }
 
 // --- RENDER STATISTICS ---

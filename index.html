@@ -1055,6 +1055,19 @@
               <button class="btn btn-danger btn-sm" id="btn-clear-mock-data">Wipe & Start Fresh</button>
             </div>
           </div>
+
+          <!-- Data Persistence -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--background-light); padding:1rem; border:1px solid var(--border-color); border-radius:var(--border-radius-md); margin-top: 1rem;">
+            <div style="max-width:500px;">
+              <h4 style="font-size:0.85rem; font-weight:700; color:var(--text-main); margin-bottom:0.25rem;">Local Data Persistence</h4>
+              <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; margin:0;">Export your local UTool data to a .json file for safekeeping, or restore from a previously saved file.</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <button class="btn btn-secondary btn-sm" id="btn-export-data"><i data-lucide="download" style="width: 14px; height: 14px; margin-right: 4px;"></i> Export Data</button>
+              <label for="input-import-data" class="btn btn-primary btn-sm" style="margin-bottom:0; cursor:pointer; display:flex; align-items:center;"><i data-lucide="upload" style="width: 14px; height: 14px; margin-right: 4px;"></i> Import Data</label>
+              <input type="file" id="input-import-data" accept=".json" style="display:none;" />
+            </div>
+          </div>
         </div>
 
       </div>
