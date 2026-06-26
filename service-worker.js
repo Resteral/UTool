@@ -1,9 +1,14 @@
-const CACHE_NAME = 'utool-cache-v2';
+const CACHE_NAME = 'utool-cache-v3';
 const urlsToCache = [
   './',
   './index.html',
   './styles.css',
+  './chatbot.css',
+  './catalog.js',
   './app.js',
+  './chatbot.js',
+  './icon-192.png',
+  './icon-512.png',
   './icon.svg'
 ];
 
