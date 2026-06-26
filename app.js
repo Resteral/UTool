@@ -349,6 +349,15 @@ function initEventListeners() {
   // Data Persistence controls
   document.getElementById("btn-export-data").addEventListener("click", exportDataToFile);
   document.getElementById("input-import-data").addEventListener("change", importDataFromFile);
+
+  // Photo Gallery & Lightbox triggers
+  document.getElementById("btn-add-photo").addEventListener("click", () => {
+    document.getElementById("gallery-photo-input").click();
+  });
+  document.getElementById("gallery-photo-input").addEventListener("change", handleGalleryPhotoUpload);
+  document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+  document.getElementById("lightbox-save-caption-btn").addEventListener("click", saveLightboxCaption);
+  document.getElementById("lightbox-delete-btn").addEventListener("click", deleteLightboxPhoto);
 }
 
 // --- RENDER STATISTICS ---
@@ -638,6 +647,7 @@ function openDetailsDrawer(jobId) {
   renderMilestonesTimeline(job);
   renderContractTab(job);
   renderJobInvoices(job);
+  renderGalleryTab(job);
 
   // Render Satellite Map Canvas
   drawSiteMap(job.address);
@@ -2171,5 +2181,163 @@ async function syncToSupabaseCloud() {
   } catch(err) {
     console.warn("Background Supabase Sync failed: ", err.message);
   }
+}
+
+// =========================================================================
+// --- PHOTO GALLERY & IMAGE COMPRESSION ---
+// =========================================================================
+
+function renderGalleryTab(job) {
+  const grid = document.getElementById("details-gallery-grid");
+  grid.innerHTML = "";
+
+  if (!job.photos || job.photos.length === 0) {
+    grid.innerHTML = `
+      <div style="padding: 2.5rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; grid-column: 1 / -1;">
+        <i data-lucide="camera-off" style="width: 28px; height: 28px; margin: 0 auto 0.5rem auto; opacity: 0.5; display:block;"></i>
+        No project photos uploaded yet.<br>Click <strong>Add Photo</strong> to capture or upload.
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  job.photos.forEach(photo => {
+    const item = document.createElement("div");
+    item.className = "gallery-item";
+    item.innerHTML = `
+      <img src="${photo.url}" alt="Site Photo">
+      <div class="gallery-item-info">
+        <span class="gallery-item-caption">${escapeHTML(photo.caption || "No caption")}</span>
+        <span class="gallery-item-date">${photo.date}</span>
+      </div>
+    `;
+    item.addEventListener("click", () => openLightbox(photo.id));
+    grid.appendChild(item);
+  });
+}
+
+function handleGalleryPhotoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const job = STATE.jobs.find(j => j.id === STATE.activeJobId);
+  if (!job) return;
+
+  // Visual loading feedback
+  const addBtn = document.getElementById("btn-add-photo");
+  const originalText = addBtn.innerHTML;
+  addBtn.disabled = true;
+  addBtn.innerHTML = `<span class="spinner" style="display:inline-block; width:12px; height:12px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation: spin 0.8s linear infinite; margin-right:6px; vertical-align:middle;"></span>Processing...`;
+
+  compressImage(file, (base64) => {
+    if (!job.photos) job.photos = [];
+
+    job.photos.push({
+      id: "photo_" + Date.now(),
+      url: base64,
+      caption: "",
+      date: new Date().toLocaleDateString()
+    });
+
+    saveData();
+    renderGalleryTab(job);
+
+    // Reset button
+    addBtn.disabled = false;
+    addBtn.innerHTML = originalText;
+    e.target.value = ""; // Clear file input
+  });
+}
+
+function compressImage(file, callback) {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = (event) => {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
+      
+      // Limit dimensions to max 800px width or height
+      const MAX_SIZE = 800;
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height = Math.round((height * MAX_SIZE) / width);
+          width = MAX_SIZE;
+        }
+      } else {
+        if (height > MAX_SIZE) {
+          width = Math.round((width * MAX_SIZE) / height);
+          height = MAX_SIZE;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to JPEG format with 70% quality compression
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      callback(compressedDataUrl);
+    };
+  };
+}
+
+function openLightbox(photoId) {
+  const job = STATE.jobs.find(j => j.id === STATE.activeJobId);
+  if (!job) return;
+
+  const photo = job.photos.find(p => p.id === photoId);
+  if (!photo) return;
+
+  STATE.activePhotoId = photoId;
+
+  document.getElementById("lightbox-img").src = photo.url;
+  document.getElementById("lightbox-date").textContent = `Captured: ${photo.date}`;
+  document.getElementById("lightbox-caption-input").value = photo.caption || "";
+  
+  const backdrop = document.getElementById("lightbox-backdrop");
+  backdrop.style.display = "flex";
+  
+  // Re-create icons inside lightbox
+  lucide.createIcons();
+}
+
+function closeLightbox() {
+  document.getElementById("lightbox-backdrop").style.display = "none";
+  STATE.activePhotoId = null;
+}
+
+function saveLightboxCaption() {
+  const job = STATE.jobs.find(j => j.id === STATE.activeJobId);
+  if (!job) return;
+
+  const photo = job.photos.find(p => p.id === STATE.activePhotoId);
+  if (!photo) return;
+
+  const captionInput = document.getElementById("lightbox-caption-input");
+  photo.caption = captionInput.value.trim();
+
+  saveData();
+  renderGalleryTab(job);
+  closeLightbox();
+}
+
+function deleteLightboxPhoto() {
+  const job = STATE.jobs.find(j => j.id === STATE.activeJobId);
+  if (!job) return;
+
+  if (!confirm("Are you sure you want to delete this photo from the site gallery?")) return;
+
+  job.photos = job.photos.filter(p => p.id !== STATE.activePhotoId);
+
+  saveData();
+  renderGalleryTab(job);
+  closeLightbox();
 }
 

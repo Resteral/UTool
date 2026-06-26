@@ -277,6 +277,7 @@
         <button class="tab-btn" data-tab="tab-crew-milestones" id="tab-crew-milestones-btn">Crew & Milestones</button>
         <button class="tab-btn" data-tab="tab-invoices" id="tab-invoices-btn">Invoices & Materials</button>
         <button class="tab-btn" data-tab="tab-contract" id="tab-contract-btn">Contract Agreement</button>
+        <button class="tab-btn" data-tab="tab-gallery" id="tab-gallery-btn">Site Gallery</button>
       </div>
 
       <div class="drawer-body">
@@ -504,6 +505,20 @@
             <!-- Dynamic invoices list populated by app.js -->
           </div>
 
+        </div>
+
+        <!-- Tab 5: Site Gallery -->
+        <div class="tab-pane" id="tab-gallery">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+            <h3 class="form-section-title" style="margin-bottom:0;"><i data-lucide="camera"></i> Site Photo Gallery</h3>
+            <div style="position:relative;">
+              <button class="btn btn-primary btn-sm" id="btn-add-photo"><i data-lucide="plus"></i> Add Photo</button>
+              <input type="file" id="gallery-photo-input" accept="image/*" capture="environment" style="display:none;">
+            </div>
+          </div>
+          <div class="gallery-grid" id="details-gallery-grid">
+            <!-- Dynamic photos populated by app.js -->
+          </div>
         </div>
 
       </div>
@@ -1074,6 +1089,26 @@
       </div>
       <div class="drawer-footer">
         <button class="btn btn-secondary" id="cloud-drawer-close-btn">Close Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LIGHTBOX / VIEW PHOTO -->
+  <div class="backdrop" id="lightbox-backdrop" style="z-index:300; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.85);">
+    <div style="position:relative; max-width:90%; max-height:90%; display:flex; flex-direction:column; align-items:center; background:var(--bg-panel); border:1px solid var(--border-color); border-radius:var(--border-radius-lg); overflow:hidden; width:450px;">
+      <button class="btn-close" id="lightbox-close" style="position:absolute; top:12px; right:12px; background:rgba(0,0,0,0.5); border-radius:50%; width:32px; height:32px; color:#fff; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; z-index:10;">
+        <i data-lucide="x"></i>
+      </button>
+      <img id="lightbox-img" src="" style="width:100%; max-height:50vh; object-fit:contain;">
+      <div style="padding:1.25rem; width:100%; box-sizing:border-box; display:flex; flex-direction:column; gap:0.75rem; background:rgba(15,23,42,0.4);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.7rem; color:var(--text-muted);" id="lightbox-date">June 26, 2026</span>
+          <button class="btn btn-danger btn-sm" id="lightbox-delete-btn" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
+            <i data-lucide="trash-2" style="width:12px; height:12px; display:inline-block; vertical-align:middle; margin-right:4px;"></i> Delete Photo
+          </button>
+        </div>
+        <textarea id="lightbox-caption-input" class="textarea-field" placeholder="Add a caption for this photo..." style="height:60px; font-size:0.8rem; margin:0;"></textarea>
+        <button class="btn btn-primary btn-sm" id="lightbox-save-caption-btn" style="align-self:flex-end;">Save Caption</button>
       </div>
     </div>
   </div>
